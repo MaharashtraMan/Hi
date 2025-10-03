@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>GBA PWA</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #000; color: #fff; text-align: center;}
+    canvas { display: block; margin: 10px auto; background: #111; }
+    #controls { margin: 12px; }
+  </style>
+</head>
+<body>
+  <h2>Game Boy Advance PWA</h2>
+  <p>Select your own <code>.gba</code> file</p>
+  <div id="controls">
+    <input type="file" id="romfile" accept=".gba"/>
+    <button id="loadBtn" disabled>Load & Run</button>
+  </div>
+  <canvas id="screen" width="240" height="160"></canvas>
+
+  <script src="https://unpkg.com/gba.js/dist/gba.min.js"></script>
+  <script>
+    let gba, romData;
+    const canvas = document.getElementById("screen");
+
+    document.getElementById("romfile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() {
+        romData = new Uint8Array(reader.result);
+        document.getElementById("loadBtn").disabled = false;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById("loadBtn").addEventListener("click", () => {
+      if (!romData) return;
+      gba = new GameBoyAdvance();
+      gba.setCanvas(canvas);
+      gba.logLevel = gba.LOG_ERROR;
+      gba.loadRom(romData.buffer).then(() => {
+        gba.runStable();
+      });
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+</body>
+</html>
