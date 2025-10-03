@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>GBA PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #000; color: #fff; text-align: center;}
+    canvas { display: block; margin: 10px auto; background: #111; }
+    #controls { margin: 12px; }
+  </style>
+</head>
+<body>
+  <h2>Game Boy Advance PWA</h2>
+  <p>Select a <code>.gba</code> file to play</p>
+  <div id="controls">
+    <input type="file" id="romfile" accept=".gba"/>
+    <button id="loadBtn" disabled>Load & Run</button>
+  </div>
+  <canvas id="screen" width="240" height="160"></canvas>
+
+  <!-- Load gbajs2 from CDN (we can bundle it locally if blocked) -->
+  <script src="https://cdn.jsdelivr.net/npm/gbajs2/dist/gbajs2.min.js"></script>
+  <script>
+    let gba, romData;
+    const canvas = document.getElementById("screen");
+
+    // Initialize GBA emulator
+    gba = new GBA({
+      onFrame: function(framebuffer) {
+        const ctx = canvas.getContext("2d");
+        const imageData = ctx.createImageData(240, 160);
+        imageData.data.set(framebuffer);
+        ctx.putImageData(imageData, 0, 0);
+      },
+      onStatusChanged: function(status) {
+        console.log("Status:", status);
+      }
+    });
+
+    // Handle file input
+    document.getElementById("romfile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() {
+        romData = new Uint8Array(reader.result);
+        document.getElementById("loadBtn").disabled = false;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Run emulator on click
+    document.getElementById("loadBtn").addEventListener("click", () => {
+      if (!romData) return;
+      gba.setRom(romData);
+      gba.runStable();
+    });
+
+    // Service Worker (optional PWA features)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
